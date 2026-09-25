@@ -167,21 +167,16 @@ namespace cmangos_module
                     if (player->getClass() == CLASS_DRUID && player->GetShapeshiftForm() != 0 && (slot == EQUIPMENT_SLOT_MAINHAND || slot == EQUIPMENT_SLOT_OFFHAND))
                         return;
 
-                // Shirt override layer
-                if (slot == EQUIPMENT_SLOT_CHEST)
-                {
-                    const ItemPrototype* proto = sObjectMgr.GetItemPrototype(entry);
-                    if (proto && proto->SubClass == ITEM_SUBCLASS_ARMOR_MISC) // It's a Shirt appearance
+                    // Execute the invisible slot
+                    if (slot == EQUIPMENT_SLOT_CHEST && entry == 999001)
                     {
-                        // Push the look onto the Shirt slot channel (EQUIPMENT_SLOT_BODY) instead of Chest
 #if EXPANSION == 2
-                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_BODY * 2, entry);
+                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_CHEST * 2, 0);
 #else
-                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_BODY * MAX_VISIBLE_ITEM_OFFSET, entry);
+                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_CHEST * MAX_VISIBLE_ITEM_OFFSET, 0);
 #endif
                         return;
                     }
-                }
 
 #if EXPANSION == 2
                 player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + item->GetSlot() * 2, entry);
@@ -500,6 +495,12 @@ namespace cmangos_module
             if (targetProto && sourceProto)
             {
                 bool allowed = false;
+
+                // Invisible chest fake ID
+                if (transmogItemID == 999001 && item->GetSlot() == EQUIPMENT_SLOT_CHEST)
+                {
+                    allowed = true;
+                }
 
                 // Base restriction requirement rules
                 if (sourceProto->Class == targetProto->Class && 
@@ -1133,6 +1134,19 @@ namespace cmangos_module
                                     discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].insert(discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].begin(), transmogItem.itemID);
                                 else
                                     discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].push_back(transmogItem.itemID);
+                            }
+                        }
+                    }
+
+                    // Add option for invisible chest armor
+                    if (transmogSlot == EQUIPMENT_SLOT_CHEST)
+                    {
+                        if (Item* chestItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_CHEST))
+                        {
+                            if (const ItemPrototype* chestProto = chestItem->GetProto())
+                            {
+                                uint32 chestProxyIndex = ITEM_CLASS_ARMOR + chestProto->SubClass;
+                                discoveredTransmogsFormatted[EQUIPMENT_SLOT_CHEST][chestProxyIndex].insert(discoveredTransmogsFormatted[EQUIPMENT_SLOT_CHEST][chestProxyIndex].begin(), 99001);
                             }
                         }
                     }
