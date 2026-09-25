@@ -37,6 +37,7 @@ namespace cmangos_module
         void OnDeleteFromDB(uint32 playerId) override;
         void OnSetVisibleItemSlot(Player* player, uint8 slot, Item* item) override;
         void OnMoveItemFromInventory(Player* player, Item* item) override;
+        void OnStoreItem(Player* player, Item* item) override;
         void OnEquipItem(Player* player, Item* item) override;
 
         // Commands
@@ -59,6 +60,18 @@ namespace cmangos_module
 
         bool IsValidTransmog(const Player* player, const ItemPrototype* itemPrototype) const;
         bool IsValidTransmog(const Player* player, uint32 itemEntry) const;
+
+        // Mixed Armor Core Rule Validators
+        bool IsSubclassMismatchAllowed(const Player* player, const ItemPrototype* source, const ItemPrototype* target) const;
+        bool IsInvTypeMismatchAllowed(const ItemPrototype* source, const ItemPrototype* target) const;
+        bool IsTieredArmorSubclass(uint32 subclass) const;
+        bool PlayerCanWearMaxArmorTier(const Player* player, uint32 tier) const;
+
+        // Mixed Weapon Core Rule Validators
+        bool IsRangedWeapon(uint32 itemClass, uint32 subclass) const;
+        bool IsWeaponSubclassMismatchAllowed(const Player* player, const ItemPrototype* source, const ItemPrototype* target) const;
+        bool IsWeaponInvTypeMismatchAllowed(const ItemPrototype* source, const ItemPrototype* target) const;
+        bool PlayerHasWeaponSkill(const Player* player, uint32 subclass) const;
 
         void LoadActiveTransmogs(Player* player);
         void SendActiveTransmogs(const Player* player);
