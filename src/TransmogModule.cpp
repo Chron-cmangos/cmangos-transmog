@@ -1138,18 +1138,22 @@ namespace cmangos_module
                             }
                         }
 
-                        // Add shirt options to chest slot
-                        if (transmogItem.itemSubclass == ITEM_SUBCLASS_ARMOR_MISC) // It's a Shirt
+                        if (transmogItem.itemSubclass == ITEM_SUBCLASS_ARMOR_MISC)
                         {
                             if (Item* chestItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_CHEST))
                             {
                                 const ItemPrototype* chestProto = chestItem->GetProto();
                                 if (chestProto)
                                 {
-                                    // Map this shirt directly into your equipped Chest slot's active sub-class grid row
+                                    // Forces the shirt item entry to map directly to the active armor tier class index row of your equipped chest
                                     uint32 chestProxyIndex = ITEM_CLASS_ARMOR + chestProto->SubClass;
                                     discoveredTransmogsFormatted[EQUIPMENT_SLOT_CHEST][chestProxyIndex].push_back(transmogItem.itemID);
                                 }
+                            }
+                            else
+                            {
+                                // Fallback: If no chest is equipped, natively map it to Cloth row (Index 5) so it still shows up in the default tab view
+                                discoveredTransmogsFormatted[EQUIPMENT_SLOT_CHEST][5].push_back(transmogItem.itemID);
                             }
                         }
                     }
