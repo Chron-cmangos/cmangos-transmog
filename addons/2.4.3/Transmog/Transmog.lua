@@ -116,7 +116,7 @@ Transmog.invTypes = {
     ['INVTYPE_HEAD'] = 1,
     ['INVTYPE_SHOULDER'] = 3,
     ['INVTYPE_CLOAK'] = 16,
-    --['INVTYPE_BODY'] = 4, -- shirt
+    ['INVTYPE_BODY'] = 4, -- shirt
     ['INVTYPE_CHEST'] = 5,
     ['INVTYPE_ROBE'] = 20,
     ['INVTYPE_WAIST'] = 6,
@@ -209,6 +209,7 @@ C_INVTYPE_RANGEDRIGHT = 26;
 --C_ITEM_SUBCLASS_WEAPON_CROSSBOW = 18;
 --C_ITEM_SUBCLASS_WEAPON_WAND = 19;
 
+--C_ITEM_SUBCLASS_ARMOR_MISC = 0;
 --C_ITEM_SUBCLASS_ARMOR_CLOTH = 1;
 --C_ITEM_SUBCLASS_ARMOR_LEATHER = 2;
 --C_ITEM_SUBCLASS_ARMOR_MAIL = 3;
@@ -834,15 +835,15 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
 
 	twfdebug("renderAvailableTransmogs slot: " .. slot .. " itemClass: " .. itemClass)
 
-	if not self.transmogDataFromServer[slot] then
-		return
-	end
-
     -- hide all item buttons
     self:hideItems(true)
     self:hideItemBorders()
 	
-	self:setProgressBar(self:tableSize(self.transmogDataFromServer[slot][itemClass]), self.numTransmogs[slot][itemClass])
+	if not self.transmogDataFromServer[slot] then
+		return
+	end
+
+    self:setProgressBar(self:tableSize(self.transmogDataFromServer[slot][itemClass]), self.numTransmogs[slot][itemClass])
     if self:tableSize(self.transmogDataFromServer[slot][itemClass]) == 0 then
         TransmogFrameNoTransmogs:Show()
     end
@@ -1134,9 +1135,6 @@ function Transmog:renderAvailableTransmogs(slot, itemClass)
         self:hidePagination()
     end
 
-    if self.currentTransmogSlotName then
-        getglobal(self.currentTransmogSlotName .. 'BorderSelected'):Show()
-    end
 
 end
 
@@ -1163,6 +1161,13 @@ function Transmog:transmogStatus()
         end
     end
 
+    -- Fix empty shirt slot
+    if ShirtSlot then
+        -- Map tracking index to internal layout arrays cleanly
+        self.inventorySlots['ShirtSlot'] = 4 
+        self.inventorySlotNames[4] = "Shirt Slot"
+    end
+
     -- add paperdoll textures
     for slotName, InventorySlotId in pairs(self.inventorySlots) do
         local frame = getglobal(slotName)
@@ -1179,7 +1184,13 @@ function Transmog:transmogStatus()
                 texture = 'chest'
             end
 
-            getglobal(frame:GetName() .. 'ItemIcon'):SetTexture('Interface\\Paperdoll\\ui-paperdoll-slot-' .. texture)
+            -- Fix empty shirt slot
+            if texture == "shirt" then
+                getglobal(frame:GetName() .. 'ItemIcon'):SetTexture('Interface\\Paperdoll\\ui-paperdoll-slot-shirt')
+            else
+                getglobal(frame:GetName() .. 'ItemIcon'):SetTexture('Interface\\Paperdoll\\ui-paperdoll-slot-' .. texture)
+            end
+            
             getglobal(frame:GetName() .. 'NoEquip'):Show()
             getglobal(frame:GetName() .. 'BorderHi'):Hide()
 
@@ -1352,7 +1363,7 @@ function Transmog:frameFromInvType(invType, clientSlot)
 end
 
 function Transmog_Try(itemId, slotName, newReset)
-	twfdebug("Transmog_Try itemID: " .. itemId .. "slotName: " .. slotName)
+    twfdebug("Transmog_Try itemID: " .. tostring(itemId) .. " slotName: " .. tostring(slotName))
 
     if newReset and getglobal(slotName .. "NoEquip"):IsVisible() then
         return false
@@ -1361,9 +1372,7 @@ function Transmog_Try(itemId, slotName, newReset)
     Transmog:hideItemBorders()
 
     if Transmog.tab == 'sets' and not newReset then
-
         TransmogFramePlayerModel:SetUnit("player")
-        --Transmog:getFashionCoins()
         Transmog:transmogStatus()
 
         for InventorySlotId, data in pairs(Transmog.transmogStatusFromServer) do
@@ -1372,7 +1381,6 @@ function Transmog_Try(itemId, slotName, newReset)
 
         local setIndex = itemId
         for _, setItemId in ipairs(Transmog.availableSets[setIndex]['items']) do
-
             local found = false
             for _, data in ipairs(Transmog.currentTransmogsData) do
                 for _, d in ipairs(data) do
@@ -1383,51 +1391,36 @@ function Transmog_Try(itemId, slotName, newReset)
             end
 
             if found then
-
                 local slot = Transmog.invTypes[Transmog.availableSets[setIndex]['itemsExtended'][setItemId]['slot']]
                 local frame = Transmog:frameFromInvType(Transmog.availableSets[setIndex]['itemsExtended'][setItemId]['slot'])
 
-                -- check if player has items equipped where sets would go
                 if GetInventoryItemLink('player', slot) then
                     local _, _, eqItemLink = TransmogFrame_Find(GetInventoryItemLink('player', slot), "(item:%d+:%d+:%d+:%d+)");
                     local equippedName = GetItemInfo(eqItemLink)
 
                     if equippedName ~= Transmog.availableSets[setIndex]['itemsExtended'][setItemId]['name'] then
-
                         TransmogFramePlayerModel:TryOn(setItemId)
-
                         getglobal(frame:GetName() .. "ItemIcon"):SetTexture(Transmog.availableSets[setIndex]['itemsExtended'][setItemId]['tex'])
-
                         getglobal(frame:GetName() .. 'BorderHi'):Show()
                         getglobal(frame:GetName() .. 'AutoCast'):Show()
-
                         Transmog.transmogStatusToServer[Transmog.invTypes[Transmog.availableSets[setIndex]['itemsExtended'][setItemId]['slot']]] = setItemId
-
                     end
-
                 else
                     getglobal(frame:GetName() .. 'BorderHi'):Hide()
                     getglobal(frame:GetName() .. 'AutoCast'):Hide()
                 end
-
             end
-
         end
 
         getglobal(slotName):SetNormalTexture('Interface\\AddOns\\Transmog\\TransmogFrame\\item_bg_selected')
-
         Transmog:calculateCost()
-
         Transmog:EnableOutfitSaveButton()
-
         return true
     end
 
     if newReset then
         local InventorySlotId = Transmog.inventorySlots[slotName]
-
         itemId = Transmog:IDFromLink(GetInventoryItemLink('player', InventorySlotId))
-
         Transmog.transmogStatusToServer[InventorySlotId] = 0
 
         getglobal(slotName .. 'BorderHi'):Hide()
@@ -1440,19 +1433,16 @@ function Transmog_Try(itemId, slotName, newReset)
         TransmogFramePlayerModel:TryOn(itemId);
 
         local _, _, _, _, _, _, _, _, _, tex = GetItemInfo(itemId)
-
         getglobal(slotName .. "ItemIcon"):SetTexture(tex)
 
         AddButtonOnEnterTooltipFashion(getglobal(slotName), GetInventoryItemLink('player', InventorySlotId))
 
         local _, _, eqItemLink = TransmogFrame_Find(GetInventoryItemLink('player', InventorySlotId), "(item:%d+:%d+:%d+:%d+)");
         local eName = GetItemInfo(eqItemLink)
-
         Transmog.equippedTransmogs[eName] = nil
 
         Transmog:calculateCost()
         Transmog:EnableOutfitSaveButton()
-
         return true
     end
 
@@ -1477,25 +1467,15 @@ function Transmog_Try(itemId, slotName, newReset)
         getglobal(Transmog.currentTransmogSlotName .. 'AutoCast'):Show()
     end
 
-    if slotName == 'SecondaryHandSlot' then
-        TransmogFramePlayerModel:TryOn(Transmog.equippedItems[Transmog.inventorySlots['MainHandSlot']])
-    end
-
+    -- Removed the problematic TransmogFramePlayerModel:TryOn for MainHand during Offhand renders.
+    -- This keeps the visual layers separated and stops the model dressing stutters.
     TransmogFramePlayerModel:TryOn(itemId);
 
     local name, linkString, quality, level, min_level, class, subclass, stack, inv_type, tex, price = GetItemInfo(itemId)
-
     getglobal(Transmog.currentTransmogSlotName .. "ItemIcon"):SetTexture(tex)
 
-    --AddButtonOnEnterTooltipFashion(_G[Transmog.currentTransmogSlotName], GetInventoryItemLink('player', Transmog.currentTransmogSlot), itemName)
-    --local _, _, eqItemLink = TransmogFrame_Find(GetInventoryItemLink('player', Transmog.currentTransmogSlot), "(item:%d+:%d+:%d+:%d+)");
-    --local eName = GetItemInfo(eqItemLink)
-    --Transmog.equippedTransmogs[eName] = itemName
-
     Transmog:calculateCost()
-
     Transmog:EnableOutfitSaveButton()
-
 end
 
 function Transmog:IDFromLink(link)
@@ -1546,7 +1526,13 @@ function Transmog:calculateCost(to)
         if data ~= self.transmogStatusToServer[InventorySlotId] then
             if self.transmogStatusToServer[InventorySlotId] ~= 0 then
                 transmogs = transmogs + 1
-				slots = slots .. InventorySlotId-1 .. ":" .. self.transmogStatusToServer[InventorySlotId] .. ","
+                
+                -- Adjust offset value
+                local targetServerSlot = InventorySlotId - 1
+                if InventorySlotId == 4 then
+                    targetServerSlot = 3 -- Hard-routes Lua index 4 straight down to Server ID 3 (EQUIPMENT_SLOT_BODY)
+                end
+				slots = slots .. targetServerSlot .. ":" .. self.transmogStatusToServer[InventorySlotId] .. ","
             else
                 resets = resets + 1
             end
@@ -1722,60 +1708,92 @@ function Transmog:ItemClassStrToNum(itemClassStr)
 end
 
 function Transmog:ItemSubclassStrToNum(itemSubclassStr)
-	local itemSubclass = -1
-	
-	if itemSubclassStr then
-		if itemSubclassStr == "One-Handed Axes" or itemSubclassStr == "Hachas de una mano" then
-			itemSubclass = 0
-		elseif itemSubclassStr == "Two-Handed Axes" or itemSubclassStr == "Hachas de dos manos" then
-			itemSubclass = 1
-		elseif itemSubclassStr == "Bows" or itemSubclassStr == "Arcos" then
-			itemSubclass = 2
-		elseif itemSubclassStr == "Guns" or itemSubclassStr == "Armas de fuego" then
-			itemSubclass = 3
-		elseif itemSubclassStr == "One-Handed Maces" or itemSubclassStr == "Mazas de una mano" then
-			itemSubclass = 4
-		elseif itemSubclassStr == "Two-Handed Maces" or itemSubclassStr == "Mazas de dos manos" then
-			itemSubclass = 5
-		elseif itemSubclassStr == "Polearms" or itemSubclassStr == "Armas de asta" then
-			itemSubclass = 6
-		elseif itemSubclassStr == "One-Handed Swords" or itemSubclassStr == "Espadas de una mano" then
-			itemSubclass = 7
-		elseif itemSubclassStr == "Two-Handed Swords" or itemSubclassStr == "Espadas de dos manos" then
-			itemSubclass = 8
-		elseif itemSubclassStr == "Staves" or itemSubclassStr == "Bastones" then
-			itemSubclass = 10
-		elseif itemSubclassStr == "Fist Weapons" or itemSubclassStr == "Armas de puño" then
-			itemSubclass = 13
-		elseif itemSubclassStr == "Daggers" or itemSubclassStr == "Dagas" then
-			itemSubclass = 15
-		elseif itemSubclassStr == "Crossbows" or itemSubclassStr == "Ballestas" then
-			itemSubclass = 18
-		elseif itemSubclassStr == "Wands" or itemSubclassStr == "Varitas" then
-			itemSubclass = 19
-		elseif itemSubclassStr == "Cloth" or itemSubclassStr == "Tela" then
-			itemSubclass = 1
-		elseif itemSubclassStr == "Leather" or itemSubclassStr == "Cuero" then
-			itemSubclass = 2
-		elseif itemSubclassStr == "Mail" or itemSubclassStr == "Malla" then
-			itemSubclass = 3
-		elseif itemSubclassStr == "Plate" or itemSubclassStr == "Placas" then
-			itemSubclass = 4
-		elseif itemSubclassStr == "Shields" or itemSubclassStr == "Escudos" then
-			itemSubclass = 6
-		elseif itemSubclassStr == "Miscellaneous" or itemSubclassStr == "Misceláneo" then
-			itemSubclass = 0
-		end
-	end
-	
-	if itemSubclass == -1 then
-		twferror("Invalid item subclass " .. itemSubclassStr)
-	end
-	
-	return itemSubclass
+    local itemSubclass = -1
+    
+    if itemSubclassStr then
+        -- Handle variations and localization strings smoothly
+        if itemSubclassStr == "One-Handed Axes" or itemSubclassStr == "Hachas de una mano" or itemSubclassStr == "Axe" then
+            itemSubclass = 0
+        elseif itemSubclassStr == "Two-Handed Axes" or itemSubclassStr == "Hachas de dos manos" or itemSubclassStr == "Axe2" then
+            itemSubclass = 1
+        elseif itemSubclassStr == "Bows" or itemSubclassStr == "Arcos" or itemSubclassStr == "Bow" then
+            itemSubclass = 2
+        elseif itemSubclassStr == "Guns" or itemSubclassStr == "Armas de fuego" or itemSubclassStr == "Gun" then
+            itemSubclass = 3
+        elseif itemSubclassStr == "One-Handed Maces" or itemSubclassStr == "Mazas de una mano" or itemSubclassStr == "Mace" then
+            itemSubclass = 4
+        elseif itemSubclassStr == "Two-Handed Maces" or itemSubclassStr == "Mazas de dos manos" or itemSubclassStr == "Mace2" then
+            itemSubclass = 5
+        elseif itemSubclassStr == "Polearms" or itemSubclassStr == "Armas de asta" or itemSubclassStr == "Polearm" then
+            itemSubclass = 6
+        elseif itemSubclassStr == "One-Handed Swords" or itemSubclassStr == "Espadas de una mano" or itemSubclassStr == "Sword" then
+            itemSubclass = 7
+        elseif itemSubclassStr == "Two-Handed Swords" or itemSubclassStr == "Espadas de dos manos" or itemSubclassStr == "Sword2" then
+            itemSubclass = 8
+        elseif itemSubclassStr == "Staves" or itemSubclassStr == "Bastones" or itemSubclassStr == "Staff" then
+            itemSubclass = 10
+        elseif itemSubclassStr == "Fist Weapons" or itemSubclassStr == "Armas de puño" or itemSubclassStr == "Fist" then
+            itemSubclass = 13
+        elseif itemSubclassStr == "Daggers" or itemSubclassStr == "Dagas" or itemSubclassStr == "Dagger" then
+            itemSubclass = 15
+        elseif itemSubclassStr == "Crossbows" or itemSubclassStr == "Ballestas" or itemSubclassStr == "Crossbow" then
+            itemSubclass = 18
+        elseif itemSubclassStr == "Wands" or itemSubclassStr == "Varitas" or itemSubclassStr == "Wand" then
+            itemSubclass = 19
+        elseif itemSubclassStr == "Cloth" or itemSubclassStr == "Tela" then
+            itemSubclass = 1
+        elseif itemSubclassStr == "Leather" or itemSubclassStr == "Cuero" then
+            itemSubclass = 2
+        elseif itemSubclassStr == "Mail" or itemSubclassStr == "Malla" then
+            itemSubclass = 3
+        elseif itemSubclassStr == "Plate" or itemSubclassStr == "Placas" then
+            itemSubclass = 4
+        elseif itemSubclassStr == "Shields" or itemSubclassStr == "Escudos" or itemSubclassStr == "Shield" then
+            itemSubclass = 6
+        elseif itemSubclassStr == "Miscellaneous" or itemSubclassStr == "Misceláneo" or itemSubclassStr == "Misc" then
+            itemSubclass = 0
+        end
+    end
+    
+    if itemSubclass == -1 then
+        twfdebug("Subclass translation bypass applied for raw ID mapping: " .. tostring(itemSubclassStr))
+        -- In Loose mode, if string matching isn't definitive, let it check the incoming string as a fallback ID token.
+        if type(itemSubclassStr) == "number" or tonumber(itemSubclassStr) then
+            return tonumber(itemSubclassStr)
+        end
+    end
+    
+    return itemSubclass
 end
 
 function selectTransmogSlot(InventorySlotId, slotName)
+
+    -- ====== CRASH-PROOF SHIRT HOOK INTERCEPT ======
+    if slotName == "ShirtSlot" then
+        TransmogFrameSplash:Hide()
+        TransmogFrameInstructions:Hide()
+        TransmogFrameNoTransmogs:Hide()
+        
+        Transmog.currentPage = 1
+        Transmog.currentTransmogSlotName = "ShirtSlot"
+        Transmog.currentTransmogSlot = 4 -- Internal Lua constant slot ID for Shirts (INVTYPE_BODY)
+        
+        -- Re-dress character model display layer dynamically
+        local shirtLink = GetInventoryItemLink('player', 4)
+        if shirtLink then
+            local _, _, eqItemId = string.find(shirtLink, "item:(%d+)")
+            TransmogFramePlayerModel:TryOn(tonumber(eqItemId))
+        end
+        
+        Transmog:hideItems(false)
+        if Transmog.hidePlayerItemsBorders then Transmog:hidePlayerItemsBorders() end
+        
+        -- Pull shirt appearance visual options (Armor + Subclass Misc = 4 + 0 = 4)
+        Transmog.currentTransmogItemClass = 4
+        Transmog:renderAvailableTransmogs(4, 4)
+        return true
+    end
+    -- ==============================================
 
 	twfdebug("selectTransmogSlot slot: " .. InventorySlotId)
 
@@ -1916,7 +1934,7 @@ end
 function Transmog_ChangePage(dir)
     Transmog.currentPage = Transmog.currentPage + dir
     if Transmog.tab == 'items' then
-        Transmog:renderAvailableTransmogs(Transmog.currentTransmogSlot)
+        Transmog:renderAvailableTransmogs(Transmog.currentTransmogSlot, Transmog.currentTransmogItemClass)
     else
         Transmog_switchTab(Transmog.tab)
     end

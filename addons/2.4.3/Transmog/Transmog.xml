@@ -978,9 +978,31 @@
                     </Anchor>
                 </Anchors>
             </Button>
-            <Button name="ChestSlot" hidden="false" inherits="TransmogPlayerSlot" text="">
+            <!-- ====== DEDICATED INDEPENDENT SHIRT SLOT BUTTON FRAME ====== -->
+            <Button name="ShirtSlot" hidden="false" inherits="TransmogPlayerSlot" text="">
                 <Anchors>
                     <Anchor point="TOP" relativeTo="BackSlot" relativePoint="BOTTOM">
+                        <Offset>
+                            <AbsDimension x="0" y="-5"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnMouseDown>
+                        if (arg1 == "RightButton") then
+                            Transmog_Try(0, "ShirtSlot", "newReset");
+                        else
+                            selectTransmogSlot(99, "ShirtSlot"); -- Sends a special ID to our Lua Hook
+                        end
+                    </OnMouseDown>
+                </Scripts>
+            </Button>
+            <!-- ============================================================ -->
+
+            <!-- Re-anchored ChestSlot directly below the new ShirtSlot button -->
+            <Button name="ChestSlot" hidden="false" inherits="TransmogPlayerSlot" text="">
+                <Anchors>
+                    <Anchor point="TOP" relativeTo="ShirtSlot" relativePoint="BOTTOM">
                         <Offset>
                             <AbsDimension x="0" y="-5"/>
                         </Offset>
@@ -996,7 +1018,6 @@
                     </Anchor>
                 </Anchors>
             </Button>
-
             <Button name="HandsSlot" hidden="false" inherits="TransmogPlayerSlot" text="">
                 <Anchors>
                     <Anchor point="TOPLEFT">
