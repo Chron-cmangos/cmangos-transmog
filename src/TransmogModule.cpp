@@ -12,6 +12,13 @@ namespace cmangos_module
 {
     void SendAddOnMessage(const Player* player, const char* prefix, const char* message)
     {
+        if (!player)
+            return;
+
+        WorldSession* session = player->GetSession();
+        if (!session)
+            return;
+
         WorldPacket data;
 
         std::ostringstream out;
@@ -34,7 +41,7 @@ namespace cmangos_module
 #else
             ChatHandler::BuildChatPacket(data, CHAT_MSG_WHISPER, line, LANG_ADDON);
 #endif
-            player->GetSession()->SendPacket(data);
+            session->SendPacket(data);
         }
 
         delete[] buf;
