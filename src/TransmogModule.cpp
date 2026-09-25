@@ -1119,25 +1119,7 @@ namespace cmangos_module
                     // PROGRESSIVE MIXED ARMOR NETWORK
                     if (transmogItem.itemClass == ITEM_CLASS_ARMOR)
                     {
-                        for (uint32 targetSub = 1; targetSub <= 4; ++targetSub)
-                        {
-                            if (targetSub == transmogItem.itemSubclass)
-                                continue;
-
-                            ItemPrototype dummyTarget;
-                            dummyTarget.Class = ITEM_CLASS_ARMOR;
-                            dummyTarget.SubClass = targetSub;
-
-                            if (IsSubclassMismatchAllowed(player, sObjectMgr.GetItemPrototype(transmogItem.itemID), &dummyTarget))
-                            {
-                                uint32 proxyClassIndex = ITEM_CLASS_ARMOR + targetSub;
-                                if (front)
-                                    discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].insert(discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].begin(), transmogItem.itemID);
-                                else
-                                    discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].push_back(transmogItem.itemID);
-                            }
-                        }
-
+                        // If this unlocked item is a shirt, it must be injected into the active Chest armor window packet streams
                         if (transmogItem.itemSubclass == ITEM_SUBCLASS_ARMOR_MISC)
                         {
                             if (Item* chestItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_CHEST))
@@ -1145,15 +1127,37 @@ namespace cmangos_module
                                 const ItemPrototype* chestProto = chestItem->GetProto();
                                 if (chestProto)
                                 {
-                                    // Forces the shirt item entry to map directly to the active armor tier class index row of your equipped chest
+                                    // Spoof the shirt's subclass tracking index header to match your equipped chest armor tier (Cloth/Leather/Mail/Plate)
                                     uint32 chestProxyIndex = ITEM_CLASS_ARMOR + chestProto->SubClass;
                                     discoveredTransmogsFormatted[EQUIPMENT_SLOT_CHEST][chestProxyIndex].push_back(transmogItem.itemID);
                                 }
                             }
                             else
                             {
-                                // Fallback: If no chest is equipped, natively map it to Cloth row (Index 5) so it still shows up in the default tab view
+                                // If naked on chest, stream it into the Cloth tab (Index 5) so it stays visible
                                 discoveredTransmogsFormatted[EQUIPMENT_SLOT_CHEST][5].push_back(transmogItem.itemID);
+                            }
+                        }
+                        else
+                        {
+                            // Standard items retain their default cross-armor progressive lookup filtering loop rules
+                            for (uint32 targetSub = 1; targetSub <= 4; ++targetSub)
+                            {
+                                if (targetSub == transmogItem.itemSubclass)
+                                    continue;
+
+                                ItemPrototype dummyTarget;
+                                dummyTarget.Class = ITEM_CLASS_ARMOR;
+                                dummyTarget.SubClass = targetSub;
+
+                                if (IsSubclassMismatchAllowed(player, sObjectMgr.GetItemPrototype(transmogItem.itemID), &dummyTarget))
+                                {
+                                    uint32 proxyClassIndex = ITEM_CLASS_ARMOR + targetSub;
+                                    if (front)
+                                        discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].insert(discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].begin(), transmogItem.itemID);
+                                    else
+                                        discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].push_back(transmogItem.itemID);
+                                }
                             }
                         }
                     }
