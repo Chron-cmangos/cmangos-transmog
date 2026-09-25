@@ -162,25 +162,24 @@ namespace cmangos_module
 
                 // Shirt override layer
                 if (slot == EQUIPMENT_SLOT_CHEST)
+                {
+                    const ItemPrototype* proto = sObjectMgr.GetItemPrototype(entry);
+                    if (proto && proto->SubClass == ITEM_SUBCLASS_ARMOR_MISC) // It's a Shirt appearance
                     {
-                        const ItemPrototype* proto = sObjectMgr.GetItemPrototype(entry);
-                        if (proto && proto->SubClass == ITEM_SUBCLASS_ARMOR_MISC)
-                        {
+                        // Push the look onto the Shirt slot channel (EQUIPMENT_SLOT_BODY) instead of Chest
 #if EXPANSION == 2
-                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_CHEST * 2, 0);
-                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_BODY * 2, entry);
+                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_BODY * 2, entry);
 #else
-                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_CHEST * MAX_VISIBLE_ITEM_OFFSET, 0);
-                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_BODY * MAX_VISIBLE_ITEM_OFFSET, entry);
+                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_BODY * MAX_VISIBLE_ITEM_OFFSET, entry);
 #endif
-                            return;
-                        }
+                        return;
                     }
+                }
 
 #if EXPANSION == 2
-                    player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + item->GetSlot() * 2, entry);
+                player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + item->GetSlot() * 2, entry);
 #else
-                    player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + item->GetSlot() * MAX_VISIBLE_ITEM_OFFSET, entry);
+                player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + item->GetSlot() * MAX_VISIBLE_ITEM_OFFSET, entry);
 #endif
                 }
             }
@@ -678,14 +677,6 @@ namespace cmangos_module
             if (updateAppearance)
             {
                 UpdateItemAppearance(player, item);
-
-                if (item->GetSlot() == EQUIPMENT_SLOT_CHEST)
-                {
-                    if (Item* shirtItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_BODY))
-                    {
-                        UpdateItemAppearance(player, shirtItem);
-                    }
-                }
             }
 
             return true;
