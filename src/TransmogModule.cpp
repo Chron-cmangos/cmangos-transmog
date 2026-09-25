@@ -160,27 +160,27 @@ namespace cmangos_module
                     if (player->getClass() == CLASS_DRUID && player->GetShapeshiftForm() != 0 && (slot == EQUIPMENT_SLOT_MAINHAND || slot == EQUIPMENT_SLOT_OFFHAND))
                         return;
 
-                // --- CPP SHIRT OVERRIDE LAYER ---
+                // Shirt override layer
                 if (slot == EQUIPMENT_SLOT_CHEST)
-                {
-                    const ItemPrototype* proto = sObjectMgr.GetItemPrototype(entry);
-                    if (proto && proto->SubClass == ITEM_SUBCLASS_ARMOR_MISC) // It's a Shirt appearance
                     {
-                        // Push the look onto the Shirt slot channel (EQUIPMENT_SLOT_BODY) instead of Chest
+                        const ItemPrototype* proto = sObjectMgr.GetItemPrototype(entry);
+                        if (proto && proto->SubClass == ITEM_SUBCLASS_ARMOR_MISC)
+                        {
 #if EXPANSION == 2
-                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_BODY * 2, entry);
+                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_CHEST * 2, 0);
+                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_BODY * 2, entry);
 #else
-                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_BODY * MAX_VISIBLE_ITEM_OFFSET, entry);
+                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_CHEST * MAX_VISIBLE_ITEM_OFFSET, 0);
+                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_BODY * MAX_VISIBLE_ITEM_OFFSET, entry);
 #endif
-                        return;
+                            return;
+                        }
                     }
-                }
-                // ---------------------------------
 
 #if EXPANSION == 2
-                player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + item->GetSlot() * 2, entry);
+                    player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + item->GetSlot() * 2, entry);
 #else
-                player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + item->GetSlot() * MAX_VISIBLE_ITEM_OFFSET, entry);
+                    player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + item->GetSlot() * MAX_VISIBLE_ITEM_OFFSET, entry);
 #endif
                 }
             }
@@ -678,6 +678,14 @@ namespace cmangos_module
             if (updateAppearance)
             {
                 UpdateItemAppearance(player, item);
+
+                if (item->GetSlot() == EQUIPMENT_SLOT_CHEST)
+                {
+                    if (Item* shirtItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_BODY))
+                    {
+                        UpdateItemAppearance(player, shirtItem);
+                    }
+                }
             }
 
             return true;
@@ -1127,6 +1135,21 @@ namespace cmangos_module
                                     discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].insert(discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].begin(), transmogItem.itemID);
                                 else
                                     discoveredTransmogsFormatted[transmogSlot][proxyClassIndex].push_back(transmogItem.itemID);
+                            }
+                        }
+
+                        // Add shirt options to chest slot
+                        if (transmogItem.itemSubclass == ITEM_SUBCLASS_ARMOR_MISC) // It's a Shirt
+                        {
+                            if (Item* chestItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_CHEST))
+                            {
+                                const ItemPrototype* chestProto = chestItem->GetProto();
+                                if (chestProto)
+                                {
+                                    // Map this shirt directly into your equipped Chest slot's active sub-class grid row
+                                    uint32 chestProxyIndex = ITEM_CLASS_ARMOR + chestProto->SubClass;
+                                    discoveredTransmogsFormatted[EQUIPMENT_SLOT_CHEST][chestProxyIndex].push_back(transmogItem.itemID);
+                                }
                             }
                         }
                     }
