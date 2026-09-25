@@ -12,6 +12,9 @@ namespace cmangos_module
     , tokenRequired(false)
     , tokenEntry(0U)
     , tokenAmount(0U)
+    , allowMixedArmorTypes(false)
+    , allowLowerTiers(false)
+    , allowChestRobeMismatch(true)
     {
     
     }
@@ -24,6 +27,15 @@ namespace cmangos_module
         tokenRequired = config.GetBoolDefault("Transmog.TokenRequired", false);
         tokenEntry = config.GetIntDefault("Transmog.TokenEntry", 0U);
         tokenAmount = config.GetIntDefault("Transmog.TokenAmount", 1U);
+        
+        // Load Mixed Armor Options
+        allowMixedArmorTypes = config.GetBoolDefault("Transmog.AllowMixedArmorTypes", false);
+        allowLowerTiers = config.GetBoolDefault("Transmog.AllowLowerTiers", false);
+        allowChestRobeMismatch = config.GetBoolDefault("Transmog.AllowChestRobeMismatch", true);
+
+        // Load Mixed Weapon Options
+        allowMixedWeaponTypes = config.GetIntDefault("Transmog.AllowMixedWeaponTypes", 0U); // 0=Strict, 1=Modern, 2=Loose
+        allowMixedWeaponHandedness = config.GetBoolDefault("Transmog.AllowMixedWeaponHandedness", false);
 
         if (tokenRequired)
         {
