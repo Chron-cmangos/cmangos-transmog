@@ -1,4 +1,8 @@
 #include "TransmogModule.h"
+#include "Entities/Creature.h"
+#include <algorithm>
+#include <cmath>
+#include <limits>
 
 #include "Entities/GossipDef.h"
 #include "Entities/Player.h"
