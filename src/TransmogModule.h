@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 #include <map>
+#include <mutex>
 
 namespace cmangos_module
 {
