@@ -1,6 +1,7 @@
 #include "TransmogModuleConfig.h"
 #include "Globals/ObjectMgr.h"
 #include "Log/Log.h"
+#include <cmath>
 
 namespace cmangos_module
 {
