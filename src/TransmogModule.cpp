@@ -157,6 +157,15 @@ namespace cmangos_module
                 {
                     if (slot == EQUIPMENT_SLOT_MAINHAND || slot == EQUIPMENT_SLOT_OFFHAND || slot == EQUIPMENT_SLOT_RANGED)
                     {
+                        // Cleanly erase the weapon GUID context from the active cache
+                        // so other core weapon systems see it as a normal un-transmogrified item
+                        const ObjectGuid itemGUID = item->GetObjectGuid();
+                        if (dataMap.find(itemGUID) != dataMap.end())
+                        {
+                            const uint32 playerID = player->GetObjectGuid().GetCounter();
+                            entryMap[playerID].erase(itemGUID);
+                            dataMap.erase(itemGUID);
+                        }
                         return;
                     }
                 }
@@ -542,9 +551,13 @@ namespace cmangos_module
                     else if (targetProto->Class == ITEM_CLASS_WEAPON)
                     {
                         // If a Druid is shifted out of normal humanoid form, completely block weapon transmogs
-                        // from touching memory or database arrays entirely. // This is not fully worked out, still figuring it out
+                        // from touching memory or database arrays entirely. // Fixed(?)
                         if (player->getClass() == CLASS_DRUID && player->GetShapeshiftForm() != 0)
                         {
+                            const ObjectGuid itemGUID = item->GetObjectGuid();
+                            const uint32 playerID = player->GetObjectGuid().GetCounter();
+                            entryMap[playerID].erase(itemGUID);
+                            dataMap.erase(itemGUID);
                             return false;
                         }
 
