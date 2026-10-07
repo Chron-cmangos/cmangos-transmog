@@ -150,24 +150,10 @@ namespace cmangos_module
                     return;
 #endif
                 // If this is a Druid, and they are in ANY form (Bear, Dire-Bear or Cat etc),
-                // we completely block the transmog module from editing weapon visual slots.
-                // This ensures the core never flags weapon instances as visible while shifted,
-                // removing double-hitting from normal attacks, crits, and death animations. // Can still be buggy
+                // we completely block the transmog module from editing ANY visual slots.
                 if (player->getClass() == CLASS_DRUID && player->GetShapeshiftForm() != 0)
                 {
-                    if (slot == EQUIPMENT_SLOT_MAINHAND || slot == EQUIPMENT_SLOT_OFFHAND || slot == EQUIPMENT_SLOT_RANGED)
-                    {
-                        // Cleanly erase the weapon GUID context from the active cache
-                        // so other core weapon systems see it as a normal un-transmogrified item
-                        const ObjectGuid itemGUID = item->GetObjectGuid();
-                        if (dataMap.find(itemGUID) != dataMap.end())
-                        {
-                            const uint32 playerID = player->GetObjectGuid().GetCounter();
-                            entryMap[playerID].erase(itemGUID);
-                            dataMap.erase(itemGUID);
-                        }
-                        return;
-                    }
+                    return;
                 }
 
                 // Verify the item is actively tracked in our runtime memory layers
@@ -177,29 +163,26 @@ namespace cmangos_module
 
                 if (uint32 entry = GetTransmogAppearance(item))
                 {
-                    if (player->getClass() == CLASS_DRUID && player->GetShapeshiftForm() != 0 && (slot == EQUIPMENT_SLOT_MAINHAND || slot == EQUIPMENT_SLOT_OFFHAND))
-                        return;
-
-                // Shirt override layer
-                if (slot == EQUIPMENT_SLOT_CHEST)
-                {
-                    const ItemPrototype* proto = sObjectMgr.GetItemPrototype(entry);
-                    if (proto && proto->SubClass == ITEM_SUBCLASS_ARMOR_MISC) // It's a Shirt appearance
+                    // Shirt override layer
+                    if (slot == EQUIPMENT_SLOT_CHEST)
                     {
-                        // Push the look onto the Shirt slot channel (EQUIPMENT_SLOT_BODY) instead of Chest
+                        const ItemPrototype* proto = sObjectMgr.GetItemPrototype(entry);
+                        if (proto && proto->SubClass == ITEM_SUBCLASS_ARMOR_MISC) // It's a Shirt appearance
+                        {
+                            // Push the look onto the Shirt slot channel (EQUIPMENT_SLOT_BODY) instead of Chest
 #if EXPANSION == 2
-                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_BODY * 2, entry);
+                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + EQUIPMENT_SLOT_BODY * 2, entry);
 #else
-                        player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_BODY * MAX_VISIBLE_ITEM_OFFSET, entry);
+                            player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + EQUIPMENT_SLOT_BODY * MAX_VISIBLE_ITEM_OFFSET, entry);
 #endif
-                        return;
+                            return;
+                        }
                     }
-                }
 
 #if EXPANSION == 2
-                player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + item->GetSlot() * 2, entry);
+                player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + slot * 2, entry);
 #else
-                player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + item->GetSlot() * MAX_VISIBLE_ITEM_OFFSET, entry);
+                player->SetUInt32Value(PLAYER_VISIBLE_ITEM_1_0 + slot * MAX_VISIBLE_ITEM_OFFSET, entry);
 #endif
                 }
             }
@@ -550,17 +533,6 @@ namespace cmangos_module
                     }
                     else if (targetProto->Class == ITEM_CLASS_WEAPON)
                     {
-                        // If a Druid is shifted out of normal humanoid form, completely block weapon transmogs
-                        // from touching memory or database arrays entirely. // Fixed(?)
-                        if (player->getClass() == CLASS_DRUID && player->GetShapeshiftForm() != 0)
-                        {
-                            const ObjectGuid itemGUID = item->GetObjectGuid();
-                            const uint32 playerID = player->GetObjectGuid().GetCounter();
-                            entryMap[playerID].erase(itemGUID);
-                            dataMap.erase(itemGUID);
-                            return false;
-                        }
-
                         if (IsRangedWeapon(sourceProto->Class, sourceProto->SubClass) != IsRangedWeapon(targetProto->Class, targetProto->SubClass))
                         {
                             allowed = false;
